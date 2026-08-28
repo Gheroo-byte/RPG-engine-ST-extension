@@ -23,7 +23,7 @@
  */
 
 const MODULE_NAME = 'rpg-engine';
-const EXTENSION_FOLDER = 'third-party/rpg-engine-st-extension';
+const EXTENSION_FOLDER = 'third-party/RPG-engine-ST-extension';
 
 /**
  * Populates the #rpg-connection-status element with live info pulled
