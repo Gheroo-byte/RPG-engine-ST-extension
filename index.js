@@ -5,25 +5,44 @@
  * (SillyTavern.getContext() + renderExtensionTemplateAsync + append to
  * #extensions_settings2) - not guessed.
  *
- * CURRENT SCOPE (matches the dev order - this is step 2, "UI", nothing more):
+ * CURRENT SCOPE (matches the dev order - step 2 "UI", plus the first
+ * real bridge into the engine core via the Formula Tester):
  *   - Load and display the 9-section settings panel
- *   - Wire up drawer expand/collapse (pure UI, no engine logic)
- *   - Display a live connection status readout, so we can tell at a glance
- *     whether the extension is actually talking to SillyTavern correctly
- *     (this directly answers "capable of connecting to see where we are")
+ *   - Wire up drawer expand/collapse
+ *   - Display a live connection status readout
+ *   - Formula Tester now calls evaluateFormula() from engine-core.js for
+ *     real, against a small labeled set of demo stats (see DEMO_STATS
+ *     below) - this is the first point of contact between the two halves
+ *     that were built and verified separately.
  *
- * EXPLICITLY NOT YET WIRED:
- *   - No calls into engine-core.js from here yet
+ * STILL NOT WIRED:
  *   - No narrator/chat integration
  *   - No persistence
- * Those are later, separate, isolated steps - keeping this file's job
- * narrow on purpose so a failure here can only mean "the UI shell has a
- * problem," not "the UI shell AND the engine AND persistence all broke
- * at once and I can't tell which."
+ *   - Every other drawer (World, Characters, Stats, Rules, Effects,
+ *     Save/Load, Settings, Event Log) is still inert placeholder content
+ * Keeping each addition narrow and isolated on purpose, so a failure can
+ * be traced to the specific piece that changed, not "everything at once."
  */
+
+import { evaluateFormula, EngineError, DiceRoller } from './engine-core.js';
 
 const MODULE_NAME = 'rpg-engine';
 const EXTENSION_FOLDER = 'third-party/RPG-engine-ST-extension';
+
+/**
+ * Demo stats for the Formula Tester, since the real Stats/Characters system
+ * (drawers still say "No profile loaded" / "0 tracked") doesn't exist yet.
+ * Not arbitrary numbers - these are Kris Talionis's actual stats (for
+ * Astralis-style formulas) and the design doc's own Talia Pounce example
+ * (for generic-named formulas), both already verified in test-engine.js.
+ * This object gets deleted once real character data is wired in.
+ */
+const DEMO_STATS = {
+  // Astralis-style (Kris Talionis, verified against his real sheet)
+  STR: 20, DEX: 52, CON: 24, CHA: 8, INT: 34, BLS: 30, LCK: 14,
+  // Generic/Kaelrath-style (design doc's Talia Pounce example)
+  Strength: 32, Agility: 36, Endurance: 24, Intelligence: 34, Perception: 18, Willpower: 20, Charisma: 8,
+};
 
 /**
  * Populates the #rpg-connection-status element with live info pulled
@@ -87,6 +106,61 @@ function wireMasterToggle() {
   });
 }
 
+/**
+ * Wires the Formula Tester box (Dice section) to actually call
+ * evaluateFormula() from engine-core.js. This is the first real bridge
+ * between the UI shell and the deterministic engine - everything before
+ * this point was UI-only or engine-only, verified separately.
+ */
+function wireFormulaTester() {
+  const input = document.getElementById('rpg-formula-test-input');
+  const button = document.getElementById('rpg-formula-test-run');
+  const output = document.getElementById('rpg-formula-test-output');
+  if (!input || !button || !output) {
+    console.warn(`[${MODULE_NAME}] Formula Tester elements not found - skipping wiring.`);
+    return;
+  }
+
+  // These were placeholder-disabled in settings.html; enable them now
+  // that there's real behavior behind them.
+  input.disabled = false;
+  button.disabled = false;
+
+  const runTest = () => {
+    const formula = input.value.trim();
+    if (!formula) {
+      output.textContent = '// enter a formula above, e.g. d60 + INT + 0.5*BLS';
+      return;
+    }
+
+    try {
+      const { total, breakdown } = evaluateFormula(formula, DEMO_STATS, new DiceRoller());
+      const lines = breakdown.map((b) => {
+        const sign = typeof b.value === 'number' && b.value >= 0 ? '+' : '';
+        return `${b.label}: ${sign}${b.value}`;
+      });
+      lines.push(`Total: ${total}`);
+      output.textContent = lines.join('\n');
+    } catch (err) {
+      if (err instanceof EngineError) {
+        output.textContent = `Error: ${err.message}`;
+      } else {
+        output.textContent = `Unexpected error: ${err.message || String(err)}`;
+        console.error(`[${MODULE_NAME}] Formula Tester unexpected error:`, err);
+      }
+    }
+  };
+
+  button.addEventListener('click', runTest);
+  // Also allow Enter key from the input field, since mobile users
+  // won't always want to reach for a separate button.
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') runTest();
+  });
+}
+
+// DiceRoller is a fresh, stateless instance per test run - no need to
+// persist it, formulas evaluate independently each time.
 async function init() {
   console.log(`[${MODULE_NAME}] Initializing...`);
 
@@ -97,6 +171,7 @@ async function init() {
 
     wireDrawers();
     wireMasterToggle();
+    wireFormulaTester();
     renderConnectionStatus();
 
     // Re-render connection status on key chat events, so the readout

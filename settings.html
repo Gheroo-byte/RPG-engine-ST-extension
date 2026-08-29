@@ -1,17 +1,23 @@
 <!--
   RPG Engine - Settings Panel Skeleton
   =====================================
-  This is a STRUCTURAL FOUNDATION ONLY. Every section below renders and
-  expands/collapses correctly, but contains placeholder content - nothing
-  here is wired to engine-core.js yet. That's intentional, matching the
-  "build the full foundation first, features gradually" philosophy.
+  This is a STRUCTURAL FOUNDATION. The Formula Tester (Dice section) is
+  now genuinely wired to engine-core.js; every other section remains
+  placeholder content per the "build the full foundation first" approach.
 
   Follows SillyTavern's own native UI pattern (the same expand/collapse
   "drawer" style used by World Info entries, the Character panel, and the
   Extensions list) rather than a custom tab bar - chosen specifically
-  because vertical accordion sections are inherently mobile-friendly
-  (natural scroll, no cramped horizontal tab icons), matching the hard
-  mobile requirement.
+  because vertical accordion sections are inherently mobile-friendly.
+
+  Everything is nested inside ONE outer master drawer (see
+  data-section="master" below), matching how every other extension in
+  the Extensions list (Story Engine, Quick Reply, etc.) collapses to a
+  single line by default rather than spilling its full contents into
+  the page. The 9 inner sections reuse the exact same .rpg-drawer
+  mechanism one level down, so wireDrawers() in index.js - which
+  generically selects every .rpg-drawer on the page - handles both
+  levels automatically with zero additional JS.
 
   This whole block gets injected into SillyTavern's extensions settings
   container (see index.js).
@@ -19,8 +25,15 @@
 
 <div id="rpg-engine-container" class="rpg-engine-root">
 
+<div class="rpg-drawer" data-section="master">
+  <div class="rpg-drawer-toggle">
+    <span class="rpg-drawer-icon">▶</span>
+    <span class="rpg-drawer-title">🎲 RPG Engine</span>
+    <span class="rpg-drawer-summary">World-agnostic mechanics engine</span>
+  </div>
+  <div class="rpg-drawer-content">
+
   <div class="rpg-engine-header">
-    <b>🎲 RPG Engine</b>
     <label class="checkbox_label">
       <input type="checkbox" id="rpg-engine-master-toggle" checked>
       <span>Enabled</span>
@@ -251,5 +264,10 @@
         gained) will log here as a delta, so changes can eventually be undone.</p>
     </div>
   </div>
+
+  </div>
+  <!-- /master drawer content -->
+  </div>
+  <!-- /master drawer -->
 
 </div>

@@ -22,9 +22,11 @@ Grouped by the six-step dev order from the original design doc.
 - [x] 9-section layout: 🌎 World · 👤 Characters · 📊 Stats · 🎲 Dice · ⚔️ Rules · 📜 Effects · 💾 Save/Load · ⚙️ Settings · 📋 Event Log
 - [x] Mobile-first CSS (touch targets, button wrapping, small-screen tightening)
 - [x] Drawer expand/collapse, wired and working
-- [x] Live connection-status readout (character name, message count, chat ID)
-- [ ] Wand-menu / floating draggable panel (currently using the plain Extensions-tab list as the verified-safe baseline — this is the deliberate next upgrade)
-- [ ] Every section is currently placeholder content — no buttons do anything yet, including the Formula Tester box, which isn't wired to `engine-core.js` even though the engine underneath it already works
+- [x] Live connection-status readout (character name, message count, chat ID) — **confirmed working live in SillyTavern**
+- [x] All 9 sections wrapped in one outer master drawer, so the extension collapses to a single line in the Extensions list by default, matching every other installed extension's convention, instead of spilling its full contents into the page
+- [x] Formula Tester wired to `engine-core.js` for real — first genuine bridge between the UI and the engine core
+- [ ] Wand-menu / floating draggable panel (still deliberately deferred — current approach uses the verified plain Extensions-tab pattern)
+- [ ] Every section besides Dice's Formula Tester is still placeholder content — no other buttons do anything yet
 
 ### 3. Persistent State Management
 - [ ] Character state storage independent of individual chats
@@ -72,12 +74,12 @@ Not forgotten, just explicitly not being built yet:
 | `index.js` | ✅ Built, untested live | Real extension entry point, verified registration pattern |
 | `manifest.json` | ✅ Built, valid JSON | Required for SillyTavern to recognize the extension |
 
-**Important gap worth naming plainly:** the engine and the UI are both individually built and individually verified, but **not yet connected to each other.** The Formula Tester box in the Dice section is inert — typing a formula there does nothing right now, even though the exact same formula would evaluate correctly if run through `test-engine.js` directly. Wiring that box up would be a good, small, satisfying first integration task once live-loading in SillyTavern is confirmed working.
+**Important gap, now smaller:** the engine and the UI are connected in exactly one place — the Formula Tester. Every other drawer (World, Characters, Stats, Rules, Effects, Save/Load, Settings, Event Log) is still fully inert. The Formula Tester currently runs against a small hardcoded demo stat set (Kris's real stats + the design doc's Talia example numbers), not a real character system yet, since Stats/Characters haven't been built.
 
 ---
 
 ## Immediate Next Steps, In Order
-1. **Confirm `index.js` actually loads in your live SillyTavern** — the connection-status box is the test. This hasn't been verified live yet, only that the code is written against confirmed-real APIs.
-2. Wire the Formula Tester to `engine-core.js` — first real bridge between the two halves, low-risk, easy to verify by hand.
+1. ~~Confirm `index.js` actually loads in your live SillyTavern~~ — **done, confirmed live**, connection status showing real character/chat data.
+2. ~~Wire the Formula Tester to `engine-core.js`~~ — **done**, tested against demo stats.
 3. Wand-menu upgrade, once its real registration API is confirmed (not yet researched to the same confidence level as the current approach).
-4. Persistent state (step 3 of the original order).
+4. Persistent state (step 3 of the original order) — likely the next real feature step, since Formula Tester proved the wiring pattern works.
