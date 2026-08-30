@@ -5,19 +5,22 @@
  * (SillyTavern.getContext() + renderExtensionTemplateAsync + append to
  * #extensions_settings2) - not guessed.
  *
- * CURRENT SCOPE (matches the dev order - step 2 "UI", plus the first
- * real bridge into the engine core via the Formula Tester):
- *   - Load and display the 9-section settings panel
+ * CURRENT SCOPE:
+ *   - Load and display the settings panel (all 9 sections wrapped in one
+ *     master drawer, matching other extensions' collapsed-by-default look)
  *   - Wire up drawer expand/collapse
  *   - Display a live connection status readout
- *   - Formula Tester now calls evaluateFormula() from engine-core.js for
- *     real, against a small labeled set of demo stats (see DEMO_STATS
- *     below) - this is the first point of contact between the two halves
- *     that were built and verified separately.
+ *   - Formula Tester calls evaluateFormula() from engine-core.js for real,
+ *     against a small labeled demo stat set (see DEMO_STATS below)
+ *   - Persistent settings (step 3 of the dev order, started small): the
+ *     Enabled toggle now genuinely survives a page reload, using the
+ *     verified extensionSettings + saveSettingsDebounced() pattern. This
+ *     proves the persistence mechanism works before real character/world
+ *     state gets built on top of it.
  *
  * STILL NOT WIRED:
  *   - No narrator/chat integration
- *   - No persistence
+ *   - No real character/world state (only the Enabled toggle persists)
  *   - Every other drawer (World, Characters, Stats, Rules, Effects,
  *     Save/Load, Settings, Event Log) is still inert placeholder content
  * Keeping each addition narrow and isolated on purpose, so a failure can
@@ -43,6 +46,40 @@ const DEMO_STATS = {
   // Generic/Kaelrath-style (design doc's Talia Pounce example)
   Strength: 32, Agility: 36, Endurance: 24, Intelligence: 34, Perception: 18, Willpower: 20, Charisma: 8,
 };
+
+// =============================================================================
+// PERSISTENT SETTINGS
+// =============================================================================
+// Pattern verified against official docs.ST.app AND cross-checked against
+// multiple real shipped extensions (Lovense-Cloud, Stable Diffusion, the
+// core connection-manager extension) - all use this identical shape, so
+// confidence here is high, not a single-source guess.
+//
+// This is step 3 of the dev order (Persistent State Management), started
+// deliberately small: proving the save/load mechanism works on the
+// simplest possible piece of data (the Enabled toggle) before building
+// real character/world state on top of it.
+
+const defaultSettings = Object.freeze({
+  enabled: true,
+});
+
+/** Gets (and lazily initializes) this extension's persistent settings
+ *  object. Also backfills any new default keys added in later versions,
+ *  so upgrading the extension doesn't wipe out a user's existing saved
+ *  values. */
+function getSettings() {
+  const { extensionSettings } = SillyTavern.getContext();
+  if (!extensionSettings[MODULE_NAME]) {
+    extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
+  }
+  for (const key of Object.keys(defaultSettings)) {
+    if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
+      extensionSettings[MODULE_NAME][key] = defaultSettings[key];
+    }
+  }
+  return extensionSettings[MODULE_NAME];
+}
 
 /**
  * Populates the #rpg-connection-status element with live info pulled
@@ -95,14 +132,26 @@ function wireDrawers() {
   });
 }
 
-/** Wires the master enable/disable checkbox. UI-only for now; doesn't
- *  actually gate any engine behavior yet since there's no engine
- *  behavior wired in here to gate. */
+/** Wires the master enable/disable checkbox to real persistence: reads
+ *  the saved value on load, writes it back (debounced) on every change.
+ *  This is the first real state that survives a page reload - proof the
+ *  persistence mechanism itself works before building real character/
+ *  world state on top of it. */
 function wireMasterToggle() {
   const toggle = document.getElementById('rpg-engine-master-toggle');
   if (!toggle) return;
+
+  const { saveSettingsDebounced } = SillyTavern.getContext();
+  const settings = getSettings();
+
+  // Reflect the saved value on load - without this, the checkbox would
+  // always show "checked" regardless of what was actually saved.
+  toggle.checked = settings.enabled;
+
   toggle.addEventListener('change', () => {
-    console.log(`[${MODULE_NAME}] Master toggle set to: ${toggle.checked}`);
+    settings.enabled = toggle.checked;
+    saveSettingsDebounced();
+    console.log(`[${MODULE_NAME}] Master toggle set to: ${toggle.checked} (saved)`);
   });
 }
 

@@ -29,9 +29,10 @@ Grouped by the six-step dev order from the original design doc.
 - [ ] Every section besides Dice's Formula Tester is still placeholder content — no other buttons do anything yet
 
 ### 3. Persistent State Management
-- [ ] Character state storage independent of individual chats
+- [x] Persistence mechanism proven working: the Enabled toggle now genuinely survives a page reload, using the verified `extensionSettings` + `saveSettingsDebounced()` pattern (confirmed against official docs + multiple real shipped extensions independently)
+- [ ] Real character state storage (stats, HP/CHI, level) independent of individual chats
 - [ ] Both user and narrator AI able to update state
-- [ ] State survives between chat sessions
+- [ ] World Profile storage/switching
 
 ### 4. Configuration / Import-Export
 - [ ] World Profile export/import (`Kaelrath_RPG.json`, `Shattered_Dominion_RPG.json`)
@@ -79,7 +80,8 @@ Not forgotten, just explicitly not being built yet:
 ---
 
 ## Immediate Next Steps, In Order
-1. ~~Confirm `index.js` actually loads in your live SillyTavern~~ — **done, confirmed live**, connection status showing real character/chat data.
-2. ~~Wire the Formula Tester to `engine-core.js`~~ — **done**, tested against demo stats.
-3. Wand-menu upgrade, once its real registration API is confirmed (not yet researched to the same confidence level as the current approach).
-4. Persistent state (step 3 of the original order) — likely the next real feature step, since Formula Tester proved the wiring pattern works.
+1. ~~Confirm `index.js` actually loads in your live SillyTavern~~ — **done, confirmed live.**
+2. ~~Wire the Formula Tester to `engine-core.js`~~ — **done, tested against demo stats.**
+3. ~~Prove the persistence mechanism works~~ — **done**, Enabled toggle survives reload.
+4. **Next**: pick one real piece of character state (e.g. Kris's HP/CHI) and persist it for real — the natural extension of the proof-of-concept, now scoped to actual game data instead of a single checkbox.
+5. Wand-menu upgrade, once its real registration API is confirmed to the same confidence level as everything else.
